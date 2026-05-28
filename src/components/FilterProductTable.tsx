@@ -1,8 +1,4 @@
 import {
-  type AccessorKeyColumnDef,
-  type Cell,
-  type Column,
-  type ColumnDef,
   createColumnHelper,
   flexRender,
   getCoreRowModel,
@@ -10,22 +6,19 @@ import {
   type OnChangeFn,
   type PaginationState,
   type Row,
-  type RowData,
-  type RowModel,
-  type Updater,
   useReactTable,
-} from "@tanstack/react-table"
-import { type Product, products } from "@/data/seed.tsx"
-import { Ellipsis } from "lucide-react"
+} from '@tanstack/react-table';
+
+import { Ellipsis, PlusCircleIcon, PlusIcon, RussianRubleIcon, Trash2Icon } from 'lucide-react';
 import {
-  TableHead,
-  TableHeader,
-  TableRow,
   Table,
   TableBody,
   TableCell,
-} from "@/components/ui/table.tsx"
-import { useEffect, useMemo, useState } from "react"
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table.tsx';
+import { useMemo } from 'react';
 import {
   Pagination,
   PaginationContent,
@@ -33,98 +26,111 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination.tsx"
-import { cn, paginate } from "@/lib/utils.ts"
-import { Badge } from "@/components/ui/badge.tsx"
-import { Switch } from "@/components/ui/switch.tsx"
-import { Field, FieldLabel } from "@/components/ui/field.tsx"
+} from '@/components/ui/pagination.tsx';
+import { cn, emit, paginate } from '@/lib/utils.ts';
+import { Badge } from '@/components/ui/badge.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import type { Product } from '../types';
 
 function RowActions(props: {
-  row: Row<Product>
-  onChange: (
-    checked: boolean,
-    productId: Product["productId"],
-    rowData: Product
-  ) => void
+  // selectedProducts: number[]
+  row: Row<Product>;
+  onAdd: TProps['onAdd'];
 }) {
-  const id = props.row.original.productId
   return (
-    <>
-      <Field orientation="horizontal" className="w-fit">
-        <Switch
-          id={"active-" + id}
-          size={"sm"}
-          onCheckedChange={(checked) =>
-            props.onChange(checked, id, props.row.original)
-          }
-          checked={props.row.original.status}
-        />
-        <FieldLabel htmlFor={"active-" + id}>
-          {props.row.original.status ? "Active" : "Disabled"}
-        </FieldLabel>
-      </Field>
-    </>
-  )
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onClick={() => emit(props.onAdd, props.row.original)}
+          variant="outline"
+          className="h-10 w-10 rounded-md border-green-400 bg-green-50 text-green-400 transition-all hover:bg-green-400 hover:text-white"
+        >
+          <PlusCircleIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side={'left'} className={'h-fit items-center'}>
+        Добавить
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
-const columnHelper = createColumnHelper<Product>()
+const columnHelper = createColumnHelper<Product>();
 
 type TProps = {
-  data: Product[]
-  rowCount: number
-  pagination: PaginationState
-  onRowChange: (oldRow: Product, newRow: Product) => void
-  onPaginationChange: OnChangeFn<PaginationState>
-}
+  data: Product[];
+  selectedProducts: number[];
+  rowCount: number;
+  pagination: PaginationState;
+  onAdd: (row: Product) => void;
+  onPaginationChange: (newPaginationState: PaginationState) => void;
+};
 
 export function FilterProductTable({
   data,
+  selectedProducts,
   onPaginationChange,
   rowCount,
   pagination,
-  onRowChange,
+  onAdd,
 }: TProps) {
   const defaultColumns = useMemo(
     () => [
-      columnHelper.accessor("name", {
-        header: "Name",
-        cell: (props) => props.getValue(),
+      columnHelper.accessor('name', {
+        header: 'Товар',
+        cell: (props) => <div className={'overflow-hidden text-ellipsis'}>{props.getValue()}</div>,
       }),
-      columnHelper.accessor("brand", {
-        header: "Brand",
-        cell: (props) => props.getValue(),
+      columnHelper.accessor('brand', {
+        header: 'Модель',
+        cell: (props) => <div className={'text-left'}>{props.getValue()}</div>,
       }),
-      columnHelper.accessor("price", {
-        header: "Price",
-        cell: (props) => props.getValue().toLocaleString(),
+      columnHelper.accessor('price', {
+        header: 'Цена',
+        cell: (props) => (
+          <div className={'flex w-40 items-end gap-1.5 text-right'}>
+            <Badge variant={'outline'}>
+              <RussianRubleIcon />
+            </Badge>{' '}
+            {parseFloat(props.getValue() as unknown as string).toLocaleString('ru-RU', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </div>
+        ),
       }),
-      columnHelper.accessor("status", {
-        header: "Status",
+      columnHelper.accessor('status', {
+        header: 'Статус',
         cell: (props) =>
           props.getValue() ? (
-            <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
-              Green
+            <Badge className="border bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
+              Активный
             </Badge>
           ) : (
             <Badge className="bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">
-              Red
+              Выключен
             </Badge>
           ),
       }),
       columnHelper.display({
-        id: "actions",
+        id: 'actions',
         cell: (props) => (
           <RowActions
+            // selectedProducts={selectedProducts}
             row={props.row}
-            onChange={(checked, id, rowData) =>
-              onRowChange(rowData, { ...rowData, status: checked })
-            }
+            onAdd={(rowData) => onAdd(rowData)}
           />
         ),
       }),
     ],
-    []
-  )
+    [selectedProducts]
+  );
+
+  const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater;
+
+    onPaginationChange(next);
+  };
 
   const table = useReactTable({
     data: data,
@@ -133,96 +139,100 @@ export function FilterProductTable({
     manualPagination: true,
     rowCount: rowCount,
     getPaginationRowModel: getPaginationRowModel(),
-    onPaginationChange: onPaginationChange,
+    onPaginationChange: handlePaginationChange,
     state: {
       pagination,
     },
-  })
+  });
 
   return (
-    <div>
-      <Table
-      // className={"pointer-events-none animate-pulse select-none"}
-      >
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.column.columnDef.header as React.ReactNode}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getCoreRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem
-            className={cn(
-              !table.getCanPreviousPage()
-                ? ["pointer-events-none opacity-50"]
-                : []
-            )}
+    <>
+      <div className={'w-full'}>
+        <div className="[&>div]:rounded-sm [&>div]:border">
+          <Table
+          // className={"pointer-events-none animate-pulse select-none"}
           >
-            <PaginationPrevious
-              href="javascript: void(0)"
-              onClick={() => {
-                table.previousPage()
-              }}
-            />
-          </PaginationItem>
-          {paginate(pagination.pageIndex, table.getPageCount(), "-").map(
-            (pageIndex) => (
-              <>
-                {pageIndex === "-" ? (
-                  <PaginationItem className={"flex h-full align-bottom"}>
-                    <Ellipsis
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
                       className={
-                        "mb-[5px] h-4 self-end align-bottom opacity-50"
+                        ['actions', 'status', 'price'].includes(header.column.id) ? 'w-0' : ''
                       }
-                    />
+                    >
+                      {header.column.columnDef.header as React.ReactNode}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getCoreRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cell.column.id === 'name' ? 'max-w-1/3' : ''}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {rowCount > pagination.pageSize && data.length && (
+        <Pagination className={'mt-3'}>
+          <PaginationContent>
+            <PaginationItem
+              className={cn(!table.getCanPreviousPage() ? ['pointer-events-none opacity-50'] : [])}
+            >
+              <PaginationPrevious
+                href="javascript: void(0)"
+                onClick={() => {
+                  table.previousPage();
+                }}
+                text={'Назад'}
+              />
+            </PaginationItem>
+            {paginate(pagination.pageIndex + 1, table.getPageCount(), '-').map((pageIndex) => (
+              <>
+                {pageIndex === '-' ? (
+                  <PaginationItem className={'flex h-full align-bottom'}>
+                    <Ellipsis className={'mb-[5px] h-4 self-end align-bottom opacity-50'} />
                   </PaginationItem>
                 ) : (
                   <PaginationItem>
                     <PaginationLink
-                      href="javascript: void(0)"
-                      isActive={pageIndex === pagination.pageIndex}
-                      onClick={() => table.setPageIndex(+pageIndex)}
+                      href="javascript: void()"
+                      isActive={pagination.pageIndex === +pageIndex - 1}
+                      onClick={() => table.setPageIndex(+pageIndex - 1)}
                     >
-                      {+pageIndex + 1}
+                      {+pageIndex}
                     </PaginationLink>
                   </PaginationItem>
                 )}
               </>
-            )
-          )}
-          <PaginationItem
-            className={cn(
-              !table.getCanNextPage() ? ["pointer-events-none opacity-50"] : []
-            )}
-          >
-            <PaginationNext
-              href="javascript: void(0)"
-              onClick={() => {
-                table.nextPage()
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </div>
-  )
+            ))}
+            <PaginationItem
+              className={cn(!table.getCanNextPage() ? ['pointer-events-none opacity-50'] : [])}
+            >
+              <PaginationNext
+                href="javascript: void(0)"
+                onClick={() => {
+                  table.nextPage();
+                }}
+                text={'Вперед'}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+    </>
+  );
 }

@@ -1,15 +1,17 @@
 {
-  "name": "tanstack-table-example",
+  "name": "oc3-product-featured-subcategory",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:dev": "cross-env NODE_ENV=development vite build --mode development  --sourcemap",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:seed": "npx tsx ./scripts/seed.ts\n"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -40,7 +42,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@faker-js/faker": "^10.4.0",
-    "@types/node": "^24.12.0",
+    "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
@@ -48,10 +50,13 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^16.5.0",
+    "postcss-prefixwrap": "^1.58.0",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "tailwindcss-rem-to-px": "^0.1.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }

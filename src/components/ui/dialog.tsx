@@ -56,7 +56,7 @@ function DialogContent({
   showCloseButton?: boolean
 }) {
   return (
-    <DialogPortal>
+    <DialogPortal container={document.querySelector('#root')}>
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"

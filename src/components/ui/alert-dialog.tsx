@@ -50,7 +50,7 @@ function AlertDialogContent({
   size?: "default" | "sm"
 }) {
   return (
-    <AlertDialogPortal>
+    <AlertDialogPortal  container={document.querySelector('#root')}>
       <AlertDialogOverlay />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
